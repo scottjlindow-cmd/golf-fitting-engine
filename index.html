@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tour Studio Custom Fitting Engine</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent-green: #10b981;
+      --accent-blue: #38bdf8;
+      --accent-gold: #f59e0b;
+      --accent-red: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); padding-bottom: 60px; }
+    .header { background: linear-gradient(135deg, #064e3b, #0f172a); padding: 24px 16px; text-align: center; border-bottom: 2px solid var(--accent-green); }
+    .header h1 { font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .header p { font-size: 0.85rem; color: var(--accent-blue); margin-top: 6px; }
+    .tabs { display: flex; overflow-x: auto; background-color: #111827; border-bottom: 1px solid var(--border-color); }
+    .tab-btn { flex: 1; min-width: 110px; padding: 14px 6px; text-align: center; background: none; border: none; color: var(--text-muted); font-weight: 600; font-size: 0.8rem; cursor: pointer; border-bottom: 3px solid transparent; }
+    .tab-btn.active { color: var(--accent-green); border-bottom-color: var(--accent-green); background-color: rgba(16, 185, 129, 0.05); }
+    .container { max-width: 800px; margin: 0 auto; padding: 16px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card { background-color: var(--card-bg); border-radius: 12px; padding: 18px; margin-bottom: 16px; border: 1px solid var(--border-color); }
+    .card h3 { font-size: 1.1rem; color: var(--accent-green); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; margin-top: 10px; font-weight: 600; }
+    input, select { width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; font-size: 0.95rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .btn-run { width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 16px; border-radius: 10px; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-bottom: 8px; }
+    .badge-shaft { background-color: rgba(56, 189, 248, 0.2); color: var(--accent-blue); }
+    .badge-head { background-color: rgba(245, 158, 11, 0.2); color: var(--accent-gold); }
+    .badge-keep { background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .badge-replace { background-color: rgba(244, 63, 94, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+    .rec-item { background: #0f172a; border-radius: 8px; padding: 14px; margin-bottom: 12px; border-left: 4px solid var(--accent-blue); }
+    .rec-item a { color: var(--accent-green); font-size: 0.85rem; text-decoration: none; display: inline-block; margin-top: 6px; }
+    .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-top: 10px; }
+    .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .highlight-box { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 0.9rem; }
+    .sub-section { background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; margin-top: 12px; border: 1px solid #334155; }
+    .sub-section h4 { font-size: 0.95rem; color: var(--accent-blue); margin-bottom: 6px; }
+    .analysis-pill { background: rgba(56, 189, 248, 0.1); border-left: 3px solid var(--accent-blue); padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 0.88rem; }
+    .rec-category { margin-top: 16px; margin-bottom: 10px; font-size: 1rem; color: var(--accent-green); font-weight: 700; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>TOUR STUDIO CUSTOM FITTING</h1>
+    <p>Driver & Iron Set Diagnostic Engine & Gear Compatibility Audit</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(0)">1. Biometrics</button>
+    <button class="tab-btn" onclick="switchTab(1)">2. Gear Audit</button>
+    <button class="tab-btn" onclick="switchTab(2)">3. Flight Dynamics</button>
+    <button class="tab-btn" onclick="switchTab(3)">4. Video & Coach</button>
+    <button class="tab-btn" onclick="switchTab(4)">5. Diagnostic Report</button>
+  </div>
+
+  <div class="container">
+    <!-- TAB 1: BIOMETRICS & PROFILE -->
+    <div class="tab-content active" id="tab-0">
+      <div class="card">
+        <h3>Player Profile & Biometrics</h3>
+        
+        <div class="grid-2">
+          <div>
+            <label>Dexterity / Handedness</label>
+            <select id="dexterity">
+              <option value="RH" selected>Right-Handed (RH)</option>
+              <option value="LH">Left-Handed (LH)</option>
+            </select>
+          </div>
+          <div>
+            <label>Gender / Build Profile</label>
+            <select id="gender_profile">
+              <option value="Men" selected>Men's Standard Spec</option>
+              <option value="Women">Women's Standard Spec</option>
+              <option value="Senior">Senior / Superlight Spec</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Player Height</label>
+        <div class="grid-2">
+          <div>
+            <select id="height_feet">
+              <option value="4">4 Feet</option>
+              <option value="5" selected>5 Feet</option>
+              <option value="6">6 Feet</option>
+            </select>
+          </div>
+          <div>
+            <select id="height_inches">
+              <option value="0">0 Inches</option>
+              <option value="1">1 Inch</option>
+              <option value="2">2 Inches</option>
+              <option value="3">3 Inches</option>
+              <option value="4">4 Inches</option>
+              <option value="5">5 Inches</option>
+              <option value="6">6 Inches</option>
+              <option value="7">7 Inches</option>
+              <option value="8">8 Inches</option>
+              <option value="9">9 Inches</option>
+              <option value="10" selected>10 Inches</option>
+              <option value="11">11 Inches</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Wrist-to-Floor (Inches)</label>
+            <input type="number" id="wtf" value="35" />
+          </div>
+          <div>
+            <label>Glove / Hand Size</label>
+            <select id="glove_size">
+              <option value="Small">Men's Small / Cadet (Undersize Grip)</option>
+              <option value="Medium" selected>Men's Medium/Large (Standard Grip)</option>
+              <option value="ML_Plus4">Men's Large (Standard + 2-3 Wraps / Plus4)</option>
+              <option value="XL">Men's XL (Midsize Grip)</option>
+              <option value="XXL">Men's XXL+ (Jumbo / Oversize Grip)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Handicap / Scoring Average</label>
+            <select id="handicap">
+              <option value="Scratch">Scratch or Plus (+ to 4 HDCP | Sub-76)</option>
+              <option value="Low" selected>Low Handicap (5 - 9 HDCP | 77-82)</option>
+              <option value="Mid">Mid Handicap (10 - 18 HDCP | 83-92)</option>
+              <option value="High">High Handicap (19+ HDCP | 93+)</option>
+            </select>
+          </div>
+          <div>
+            <label>Joint Pain / Vibration Sensitivity?</label>
+            <select id="joint_pain">
+              <option value="No" selected>No Joint Discomfort (Steel or Graphite)</option>
+              <option value="Yes">Yes (Require High-Dampening Graphite)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Driver Swing Speed (mph)</label>
+            <input type="number" id="speed" value="96" />
+          </div>
+          <div>
+            <label>7-Iron Carry Distance (yds)</label>
+            <input type="number" id="iron_carry" value="155" />
+          </div>
+        </div>
+
+        <div>
+          <label>Tempo & Transition</label>
+          <select id="tempo">
+            <option value="Smooth">Smooth (Deliberate / Longer Arc)</option>
+            <option value="Moderate" selected>Moderate (Standard / Fluid)</option>
+            <option value="Aggressive">Aggressive (Quick / Fast Transition)</option>
+          </select>
+        </div>
+
+        <button class="btn-run" onclick="switchTab(1)">Next: Gear Audit →</button>
+      </div>
+    </div>
+
+    <!-- TAB 2: CURRENT GEAR AUDIT (GRANULAR SPEC INTAKE) -->
+    <div class="tab-content" id="tab-1">
+      <div class="card">
+        <h3>Current Club Audit (Driver & Irons)</h3>
+        
+        <!-- DRIVER CASCADING -->
+        <div class="sub-section">
+          <h4>1. Current Driver Setup</h4>
+          <div class="grid-2">
+            <div>
+              <label>Driver Brand</label>
+              <select id="driver_brand_sel" onchange="updateDriverHeads()"></select>
+            </div>
+            <div>
+              <label>Driver Model</label>
+              <select id="driver_head_sel"></select>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div>
+              <label>Stated Loft</label>
+              <select id="driver_loft">
+                <option value="8.5">8.5° or Lower</option>
+                <option value="9.0">9.0°</option>
+                <option value="9.5">9.5°</option>
+                <option value="10.5" selected>10.5°</option>
+                <option value="12.0">12.0° or Higher</option>
+              </select>
+            </div>
+            <div>
+              <label>Shaft Weight</label>
+              <select id="driver_shaft_weight">
+                <option value="45">40g - 49g (Ultralight)</option>
+                <option value="55" selected>50g - 59g (Mid-Light)</option>
+                <option value="65">60g - 69g (Standard Tour)</option>
+                <option value="75">70g - 79g (Heavy Tour)</option>
+              </select>
+            </div>
+            <div>
+              <label>Shaft Flex</label>
+              <select id="driver_shaft_flex">
+                <option value="A">Senior / Lite (A)</option>
+                <option value="R">Regular (R)</option>
+                <option value="S" selected>Stiff (S)</option>
+                <option value="X">Extra Stiff (X / TX)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label>Shaft Manufacturer</label>
+              <select id="driver_shaft_mfg" onchange="updateDriverShafts()"></select>
+            </div>
+            <div>
+              <label>Shaft Family</label>
+              <select id="driver_shaft_sel"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- IRONS CASCADING -->
+        <div class="sub-section">
+          <h4>2. Current Iron Set Setup</h4>
+          <div class="grid-2">
+            <div>
+              <label>Iron Brand</label>
+              <select id="iron_brand_sel" onchange="updateIronHeads()"></select>
+            </div>
+            <div>
+              <label>Iron Model Series</label>
+              <select id="iron_head_sel"></select>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div>
+              <label>Set Construction</label>
+              <select id="iron_set_type">
+                <option value="Variable" selected>Standard Variable Length</option>
+                <option value="OneLength">One-Length Set (Cobra 37.25")</option>
+              </select>
+            </div>
+            <div>
+              <label>Shaft Material & Weight</label>
+              <select id="iron_shaft_weight">
+                <option value="GraphiteLight">Graphite (65g - 80g)</option>
+                <option value="GraphiteHeavy">Graphite / SteelFiber (90g - 110g)</option>
+                <option value="SteelLight">Steel Light (95g - 105g)</option>
+                <option value="SteelMid" selected>Steel Mid (105g - 115g)</option>
+                <option value="SteelTour">Steel Tour Heavy (120g - 130g)</option>
+              </select>
+            </div>
+            <div>
+              <label>Iron Flex</label>
+              <select id="iron_shaft_flex">
+                <option value="A">Senior / Lite (A)</option>
+                <option value="R">Regular (R / 5.0)</option>
+                <option value="S" selected>Stiff (S / S300 / 6.0)</option>
+                <option value="X">Extra Stiff (X / X100 / 6.5)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label>Iron Shaft Brand</label>
+              <select id="iron_shaft_mfg" onchange="updateIronShafts()"></select>
+            </div>
+            <div>
+              <label>Iron Shaft SKU</label>
+              <select id="iron_shaft_sel"></select>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-run" onclick="switchTab(2)">Next: Flight Dynamics →</button>
+      </div>
+    </div>
+
+    <!-- TAB 3: FLIGHT DYNAMICS -->
+    <div class="tab-content" id="tab-2">
+      <div class="card">
+        <h3>Ball Flight & Miss Tendencies</h3>
+        
+        <!-- DRIVER FLIGHT -->
+        <div class="sub-section">
+          <h4>1. Driver Flight & Strike Profile</h4>
+          <div class="grid-2">
+            <div>
+              <label>Driver Miss Direction</label>
+              <select id="driver_miss">
+                <option value="Slice" selected>High Weak Slice / Push Fade</option>
+                <option value="Hook">Low Snap Hook / Over-draw</option>
+                <option value="Push">Straight Block Right</option>
+                <option value="Pull">Straight Pull Left</option>
+                <option value="Center">Consistent Straight / Slight Cut</option>
+              </select>
+            </div>
+            <div>
+              <label>Driver Launch & Spin</label>
+              <select id="driver_launch">
+                <option value="Low">Low Launch / Sub-2000 RPM</option>
+                <option value="Optimal" selected>Optimal Mid-High (12°-14°)</option>
+                <option value="High">High / Ballooning (>2900 RPM)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>Driver Face Contact Pattern</label>
+            <select id="driver_strike">
+              <option value="Heel">Heel Strikes (Speed loss / gear slice)</option>
+              <option value="Toe">Toe Strikes (Gear effect hook)</option>
+              <option value="High">High Face / Pop-up</option>
+              <option value="Center" selected>Consistent Sweet Spot Contact</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- IRON FLIGHT -->
+        <div class="sub-section">
+          <h4>2. Iron Set Flight & Turf Interaction</h4>
+          <div class="grid-2">
+            <div>
+              <label>Iron Miss Tendency</label>
+              <select id="iron_miss">
+                <option value="PushRight">Push Right / Weak Fade</option>
+                <option value="PullLeft">Pull Left / Over-Hook</option>
+                <option value="Thin">Thin / Picking Ball Clean</option>
+                <option value="Fat" selected>Heavy / Chunky Fat Strikes</option>
+                <option value="Center">Solid Center Strikes</option>
+              </select>
+            </div>
+            <div>
+              <label>Iron Peak Apex</label>
+              <select id="iron_launch">
+                <option value="Low">Too Flat / Under-launching</option>
+                <option value="Optimal" selected>Optimal Peak Height</option>
+                <option value="High">Too High / Floating into wind</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>Turf Interaction / Divot Pattern</label>
+            <select id="iron_divot">
+              <option value="Sweeper">Sweeper / No Divot (Shallow AoA)</option>
+              <option value="Standard" selected>Standard Bruise / Dollar-Bill Divot</option>
+              <option value="Digger">Digger / Deep Heavy Divots (Steep AoA)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-run" onclick="switchTab(3)">Next: Video & Coach →</button>
+      </div>
+    </div>
+
+    <!-- TAB 4: 4-ANGLE VIDEO UPLOADS & COACH -->
+    <div class="tab-content" id="tab-3">
+      <div class="card">
+        <h3>Swing Video Uploads & Preferred Coach</h3>
+        
+        <label>Favorite YouTube Golf Coach / Channel</label>
+        <select id="fav_coach">
+          <option value="DannyMaude" selected>Danny Maude (Simple, Natural Swing Mechanics)</option>
+          <option value="PadraigHarrington">Padraig Harrington (Paddy's Golf Tips / Tour Insights)</option>
+          <option value="RickShiels">Rick Shiels Golf (Straightforward Fault Fixes)</option>
+        </select>
+
+        <div class="sub-section" style="margin-top:14px;">
+          <h4>🏌️‍♂️ Driver Swing Videos</h4>
+          <div class="grid-2">
+            <div>
+              <label>Driver: Down the Line</label>
+              <input type="file" accept="video/*" />
+            </div>
+            <div>
+              <label>Driver: Face On</label>
+              <input type="file" accept="video/*" />
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-section" style="margin-top:14px;">
+          <h4>🎯 Iron Swing Videos</h4>
+          <div class="grid-2">
+            <div>
+              <label>Iron: Down the Line</label>
+              <input type="file" accept="video/*" />
+            </div>
+            <div>
+              <label>Iron: Face On</label>
+              <input type="file" accept="video/*" />
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-run" onclick="runDiagnostic()">Run Master Fitting Diagnostic ⚡</button>
+      </div>
+    </div>
+
+    <!-- TAB 5: DIAGNOSTIC REPORT -->
+    <div class="tab-content" id="tab-4">
+      <div class="card">
+        <h3>Master Blueprint & Custom Build Specs</h3>
+        <div id="spec_summary"></div>
+        <canvas id="flightChart" style="max-height: 260px; margin: 16px 0;"></canvas>
+      </div>
+
+      <!-- CURRENT GEAR COMPATIBILITY AUDIT -->
+      <div class="card">
+        <h3>Current Gear Compatibility Audit (Keep vs. Replace)</h3>
+        <div id="current_gear_audit"></div>
+      </div>
+
+      <!-- SWING BREAKDOWN CARD -->
+      <div class="card">
+        <h3>Comprehensive Swing Diagnostic Breakdown</h3>
+        <div id="swing_breakdown"></div>
+      </div>
+
+      <!-- DUAL VIDEO DRILL CARD -->
+      <div class="card">
+        <h3>Prescribed Driver & Iron Drills</h3>
+        
+        <div class="sub-section">
+          <h4>🏌️‍♂️ 1. Prescribed Driver Drill</h4>
+          <div id="driver_video_drill"></div>
+        </div>
+
+        <div class="sub-section" style="margin-top:16px;">
+          <h4>🎯 2. Prescribed Iron Strike Drill</h4>
+          <div id="iron_video_drill"></div>
+        </div>
+      </div>
+
+      <!-- 3x3x3x3 PRESCRIPTIONS GRID -->
+      <div class="card">
+        <h3>Tour Prescriptions: Heads & Shafts</h3>
+        
+        <div class="rec-category">🏌️‍♂️ 3 Driver Head Choices</div>
+        <div id="driver_heads_rec"></div>
+
+        <div class="rec-category">⚡ 3 Driver Shaft Choices</div>
+        <div id="driver_shafts_rec"></div>
+
+        <div class="rec-category">🎯 3 Iron Set Head Choices</div>
+        <div id="iron_heads_rec"></div>
+
+        <div class="rec-category">🔩 3 Iron Shaft Set Choices</div>
+        <div id="iron_shafts_rec"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 12-YEAR MASTER GOLF EQUIPMENT DATABASE (2014 - 2026) ---
+    const DB = {
+      driverHeads: {
+        "Ping": [
+          "G430 Max 10K (2024)", "G430 Max / LST / SFT (2023)", "G425 Max / LST / SFT (2021)", 
+          "G410 Plus / LST / SFT (2019)", "G400 / G400 Max / LST / SFT (2017-18)", "G Series / G LS Tec (2016)", "G30 / G30 LS Tec (2014)"
+        ],
+        "TaylorMade": [
+          "Qi10 / Qi10 Max / Qi10 LS (2024)", "Stealth 2 / Plus / HD (2023)", "Stealth / Plus / HD (2022)", 
+          "SIM2 / SIM2 Max / SIM2 Max D (2021)", "SIM / SIM Max / SIM D-Type (2020)", "M5 / M6 (2019)", 
+          "M3 / M4 (2018)", "M1 / M2 (2017)", "M1 / M2 (2016)", "SLDR / R15 (2014-15)"
+        ],
+        "Callaway": [
+          "Paradym Ai Smoke Max / D / Triple Diamond (2024)", "Paradym / X / Triple Diamond (2023)", "Rogue ST Max / LS / Triple Diamond (2022)", 
+          "Epic Speed / Epic Max / Max LS (2021)", "Mavrik / Sub Zero / Max (2020)", "Epic Flash / Sub Zero (2019)", 
+          "Rogue / Sub Zero (2018)", "GBB Epic / Sub Zero (2017)", "XR 16 / XR Pro (2016)", "Big Bertha Alpha 815 / V-Series (2014-15)"
+        ],
+        "Titleist": [
+          "GT2 / GT3 / GT4 (2024)", "TSR2 / TSR3 / TSR4 (2022)", "TSi2 / TSi3 / TSi4 / TSi1 (2020)", 
+          "TS2 / TS3 / TS4 / TS1 (2018)", "917 D2 / D3 (2016)", "915 D2 / D3 (2014)"
+        ],
+        "Cobra": [
+          "Darkspeed X / LS / Max (2024)", "Aerojet / LS / Max (2023)", "LTDx / LS / Max (2022)", 
+          "RadSpeed / XB / XD (2021)", "King SpeedZone / Xtreme (2020)", "King F9 Speedback (2019)", 
+          "King F8 / F8+ (2018)", "King F7 / F7+ (2017)", "King LTD / F6 (2015-16)", "Bio Cell / Bio Cell+ (2014)"
+        ],
+        "Mizuno": [
+          "ST-G 440 / ST-Z 230 / ST-X 230 (2023-24)", "ST-Z 220 / ST-X 220 (2022)", "ST-Z / ST-X (2021)", 
+          "ST200 / ST200G / ST200X (2020)", "ST190 / ST190G (2019)", "GT180 / ST180 (2018)", "JPX 900 / JPX 850 (2014-16)"
+        ],
+        "Srixon & Cleveland": [
+          "Srixon ZX5 Mk II / ZX7 Mk II / LS (2023)", "Srixon ZX5 / ZX7 (2021)", "Srixon Z 785 / Z 585 (2018)", 
+          "Cleveland Launcher XL / XL2 (2022-24)", "Cleveland Launcher HB / Turbo (2017-19)"
+        ],
+        "PXG & Others": [
+          "PXG 0311 Black Ops / Tour-1 (2024)", "PXG 0311 Gen6 / Gen5 (2022-23)", "PXG 0811X / XF Gen4 / Gen2 (2019-21)", 
+          "Tour Edge Exotics E723 / C723 (2023)", "Wilson Dynapower Carbon / Titanium (2023)", "Sub 70 849 Pro / D (2021-23)"
+        ]
+      },
+      driverShafts: {
+        "Fujikura": [
+          "Ventus Blue TR (Velocore)", "Ventus Black TR (Velocore)", "Ventus Red TR (Velocore)",
+          "2024 Ventus Blue", "2024 Ventus Black", "Speeder NX Blue",
+          "Speeder NX Green", "Motore X F1 / F3", "Stock OEM Ventus (Non-Velocore)"
+        ],
+        "Mitsubishi Chemical": [
+          "Tensei 1K Pro White", "Tensei 1K Pro Blue", "Tensei 1K Pro Orange",
+          "Tensei AV Raw White", "Tensei AV Raw Blue", "Diamana GT",
+          "Diamana TB / ZF / DF", "Kai'li White", "Kai'li Blue",
+          "Vanquish Series", "Diamana S+ / D+ (Legacy)"
+        ],
+        "Project X / True Temper": [
+          "HZRDUS Smoke Green (Small Batch / PVD)", "HZRDUS Smoke Black RDX",
+          "HZRDUS Smoke Blue RDX", "HZRDUS Black 4G", "HZRDUS Yellow",
+          "EvenFlow Riptide CB", "EvenFlow Riptide Black", "EvenFlow Blue (Legacy)"
+        ],
+        "Ping / UST / Graphite Design": [
+          "Ping Alta CB Slate / Black", "Ping Tour 2.0 Chrome", "Ping Tour 2.0 Black",
+          "UST Mamiya LIN-Q M40X White", "UST Mamiya LIN-Q M40X Blue", "UST Mamiya Helium Nanocore",
+          "Graphite Design Tour AD-VF", "Graphite Design Tour AD-CQ", "Graphite Design Tour AD-UB",
+          "Graphite Design Tour AD-DI", "Graphite Design Tour AD-IZ / XC"
+        ]
+      },
+      ironHeads: {
+        "Ping": [
+          "Blueprint T / Blueprint S (2024)", "i230 Player's Cavity (2022-24)", "G430 / G730 Game Improvement (2023-24)",
+          "i530 / i525 Player's Distance (2022-24)", "G425 / G410 Game Improvement (2019-21)", "i210 / i200 Tour Cavity (2017-19)",
+          "i500 / iBlade (2016-18)", "G / G30 / G25 Series (2014-16)"
+        ],
+        "TaylorMade": [
+          "P790 / P770 (2023-24 Gen 4)", "P7CB / P7MC / P7MB (2023-24)", "Qi / Qi HL (2024)", "Stealth / Stealth HD (2022-23)",
+          "P790 / P770 (2021 Gen 3)", "P790 / P760 (2018-19 Gen 2)", "SIM2 Max / SIM Max (2020-21)", "M6 / M5 / M4 / M2 (2016-19)",
+          "PSI / RSi 1 / RSi 2 / RSi TP (2014-15)"
+        ],
+        "Titleist": [
+          "T100 / T150 (2023-24 Tour)", "T200 Player's Distance (2023-24)", "T350 Game Improvement (2023-24)",
+          "T100 / T100S / T200 (2021 Gen 2)", "T100 / T200 / T300 (2019 Gen 1)", "620 CB / 620 MB (2019-24)",
+          "718 AP2 / AP3 / AP1 / CB / MB (2017-18)", "716 AP2 / AP1 / CB / MB (2015-16)", "714 AP2 / AP1 (2014)"
+        ],
+        "Mizuno": [
+          "Mizuno Pro 241 / 243 / 245 (2024)", "JPX 923 Tour / Forged (2023)", "JPX 923 Hot Metal / Pro / HL (2023)",
+          "Mizuno Pro 221 / 223 / 225 (2022)", "JPX 921 Tour / Forged / Hot Metal (2020)", "MP-20 / MP-20 MMC / HMB (2019)",
+          "JPX 919 Tour / Forged / Hot Metal (2018)", "MP-18 / MP-18 SC / MMC (2017)", "JPX 900 / JPX 850 (2014-16)"
+        ],
+        "Srixon & Cleveland": [
+          "ZX7 Mk II / ZX5 Mk II / ZX4 Mk II (2023)", "Z-Forged II (2023)", "ZX7 / ZX5 / ZX4 (2021)", 
+          "Z 785 / Z 585 / Z Forged (2018-19)", "Z 765 / Z 565 / Z 965 (2016-17)", "Cleveland Launcher XL / Halo XL Full-Face (2022-24)"
+        ],
+        "Callaway, Cobra, PXG & Others": [
+          "Callaway Apex Pro / CB / MB (2024)", "Callaway Paradym Ai Smoke / Paradym (2023-24)", "Callaway Apex 21 / Apex DCB (2021)",
+          "Callaway Apex 19 / Apex CF 16 (2016-19)", "Cobra King Tour / King CB/MB / Forged TEC (2023)", "Cobra LTDx / RadSpeed / F9 (2019-22)",
+          "PXG 0311 P / XP / T (Gen6 / Gen5 / Gen4)", "Wilson Staff Model CB / Blade / Dynapower (2023-24)", "Tour Edge Exotics C723 / E723 (2023)",
+          "Miura TC-201 / MB-101 / MC-502", "Sub 70 659 Tour / 699 Pro (2021-24)"
+        ]
+      },
+      ironShafts: {
+        "True Temper Steel": [
+          "Dynamic Gold 105", "Dynamic Gold 120", "Dynamic Gold Tour Issue S400/X100",
+          "Dynamic Gold Mid 100", "Dynamic Gold Mid 115", "Dynamic Gold Standard",
+          "Elevate MPH 95", "Elevate 95 / 105", "XP 95 / XP 105"
+        ],
+        "Nippon N.S. Pro Steel": [
+          "Modus3 Tour 105", "Modus3 Tour 120", "Modus3 Tour 115", "Modus3 Tour 125",
+          "N.S. Pro 950GH Neo", "N.S. Pro 850GH Neo", "N.S. Pro Zelos 7 / Zelos 8"
+        ],
+        "KBS Steel": [
+          "KBS Tour", "KBS Tour 90", "KBS Tour 105", "KBS $-Taper",
+          "KBS $-Taper Lite", "KBS C-Taper", "KBS C-Taper Lite", "KBS Max 80"
+        ],
+        "Project X Steel": [
+          "Project X Rifle", "Project X IO", "Project X LZ"
+        ],
+        "Composite & Graphite Iron Shafts": [
+          "Aerotech SteelFiber i95", "Aerotech SteelFiber i110", "Aerotech SteelFiber fc90 / fc115",
+          "Mitsubishi MMT 70 / 80", "Mitsubishi MMT 90 / 105 / 125", "UST Mamiya Recoil DART 65 / 75",
+          "UST Mamiya Recoil DART 90 / 105", "UST Mamiya Recoil 760 / 780 ES SmacWrap",
+          "Fujikura Axiom 75 / 105", "KBS TGI Tour Graphite"
+        ]
+      }
+    };
+
+    function populateDropdown(elId, items) {
+      const el = document.getElementById(elId);
+      el.innerHTML = "";
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item;
+        opt.textContent = item;
+        el.appendChild(opt);
+      });
+    }
+
+    function initCascades() {
+      // Driver Brands
+      const dBrands = Object.keys(DB.driverHeads);
+      populateDropdown("driver_brand_sel", dBrands);
+      updateDriverHeads();
+
+      // Driver Shaft Manufacturers
+      const dShaftMfgs = Object.keys(DB.driverShafts);
+      populateDropdown("driver_shaft_mfg", dShaftMfgs);
+      updateDriverShafts();
+
+      // Iron Brands
+      const iBrands = Object.keys(DB.ironHeads);
+      populateDropdown("iron_brand_sel", iBrands);
+      updateIronHeads();
+
+      // Iron Shaft Manufacturers
+      const iShaftMfgs = Object.keys(DB.ironShafts);
+      populateDropdown("iron_shaft_mfg", iShaftMfgs);
+      updateIronShafts();
+    }
+
+    function updateDriverHeads() {
+      const brand = document.getElementById("driver_brand_sel").value;
+      populateDropdown("driver_head_sel", DB.driverHeads[brand] || []);
+    }
+
+    function updateDriverShafts() {
+      const mfg = document.getElementById("driver_shaft_mfg").value;
+      populateDropdown("driver_shaft_sel", DB.driverShafts[mfg] || []);
+    }
+
+    function updateIronHeads() {
+      const brand = document.getElementById("iron_brand_sel").value;
+      populateDropdown("iron_head_sel", DB.ironHeads[brand] || []);
+    }
+
+    function updateIronShafts() {
+      const mfg = document.getElementById("iron_shaft_mfg").value;
+      populateDropdown("iron_shaft_sel", DB.ironShafts[mfg] || []);
+    }
+
+    window.addEventListener("DOMContentLoaded", initCascades);
+
+    let flightChart = null;
+
+    function switchTab(index) {
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === index);
+      });
+      document.querySelectorAll('.tab-content').forEach((tab, i) => {
+        tab.classList.toggle('active', i === index);
+      });
+      window.scrollTo(0, 0);
+    }
+
+    function runDiagnostic() {
+      const dexterity = document.getElementById('dexterity').value;
+      const gender = document.getElementById('gender_profile').value;
+      const glove = document.getElementById('glove_size').value;
+      const handicap = document.getElementById('handicap').value;
+      const jointPain = document.getElementById('joint_pain').value;
+
+      const feet = parseInt(document.getElementById('height_feet').value);
+      const inches = parseInt(document.getElementById('height_inches').value);
+      const totalHeightInches = (feet * 12) + inches;
+      const wtf = parseFloat(document.getElementById('wtf').value);
+      const speed = parseFloat(document.getElementById('speed').value);
+      const ironCarry = parseFloat(document.getElementById('iron_carry').value);
+      const driverMiss = document.getElementById('driver_miss').value;
+      const ironMiss = document.getElementById('iron_miss').value;
+      const driverStrike = document.getElementById('driver_strike').value;
+      const divot = document.getElementById('iron_divot').value;
+      const tempo = document.getElementById('tempo').value;
+      const coach = document.getElementById('fav_coach').value;
+
+      // Current Gear Inputs
+      const curDriverHead = document.getElementById('driver_head_sel').value;
+      const curDriverLoft = parseFloat(document.getElementById('driver_loft').value);
+      const curDriverWeight = parseInt(document.getElementById('driver_shaft_weight').value);
+      const curDriverFlex = document.getElementById('driver_shaft_flex').value;
+      const curDriverShaft = document.getElementById('driver_shaft_sel').value;
+
+      const curIronHead = document.getElementById('iron_head_sel').value;
+      const curIronType = document.getElementById('iron_set_type').value;
+      const curIronWeight = document.getElementById('iron_shaft_weight').value;
+      const curIronFlex = document.getElementById('iron_shaft_flex').value;
+      const curIronShaft = document.getElementById('iron_shaft_sel').value;
+
+      // Optimal Flex & Weight Matrix Calculations
+      let optFlex = "R";
+      let optFlexName = "Regular (R)";
+      let optDriverWeight = 55;
+      let optIronWeightName = "95g - 105g (Mid-Weight Steel)";
+      let optLoft = 10.5;
+
+      if (speed < 85 || ironCarry < 140 || gender === "Senior" || gender === "Women") {
+        optFlex = "A";
+        optFlexName = "Senior / Lite (A)";
+        optDriverWeight = 45;
+        optIronWeightName = "65g - 80g (High-Launch Graphite)";
+        optLoft = 12.0;
+      } else if (speed > 105 || ironCarry > 175) {
+        optFlex = "X";
+        optFlexName = "Extra Stiff (X)";
+        optDriverWeight = 65;
+        optIronWeightName = "120g - 130g (Tour Weight Steel)";
+        optLoft = 9.0;
+      } else if (speed >= 95 || ironCarry >= 155) {
+        optFlex = "S";
+        optFlexName = "Stiff (S)";
+        optDriverWeight = 60;
+        optIronWeightName = "105g - 115g (Stiff Steel)";
+        optLoft = 9.5;
+      }
+
+      if (jointPain === "Yes") {
+        optIronWeightName = "85g - 95g (High-Dampening Aerotech SteelFiber / MMT Composite)";
+      }
+
+      // Biometric Length Adjustment
+      let lenAdj = "Standard (Driver 45.5\" / 7-Iron 37.0\")";
+      let lieAdj = "Standard Lie";
+      if (wtf < 34) {
+        lenAdj = "-0.50\" Under Standard";
+        lieAdj = "1.0° - 2.0° Flat (Red/Orange Dot)";
+      } else if (wtf > 36) {
+        lenAdj = "+0.50\" Over Standard";
+        lieAdj = "1.0° - 2.0° Upright (Blue/Green Dot)";
+      }
+
+      // Grip Spec
+      let gripSpec = "Standard (.580 / .600 Core with 1 layer tape)";
+      if (glove === "Small") gripSpec = "Undersize / Ladies Grip (Reduces finger tension)";
+      if (glove === "ML_Plus4") gripSpec = "Standard Plus4 / Reduced Taper (Lighter grip pressure)";
+      if (glove === "XL") gripSpec = "Midsize Grip (Prevents wrist over-rotation)";
+      if (glove === "XXL") gripSpec = "Jumbo / Oversize Grip (Max shock absorption & face stabilization)";
+
+      // Master Blueprint Output
+      document.getElementById('spec_summary').innerHTML = `
+        <p><strong>Profile:</strong> ${dexterity === "LH" ? "Left-Handed" : "Right-Handed"} | ${gender} | HDCP: ${handicap}</p>
+        <p><strong>Height / Biometrics:</strong> ${feet}' ${inches}" (${totalHeightInches}") | WTF: ${wtf}"</p>
+        <p><strong>Target Driver Blueprint:</strong> <span style="color:var(--accent-green); font-weight:700;">${optLoft}° Loft | ${optFlexName} (${optDriverWeight}g - ${optDriverWeight+5}g)</span></p>
+        <p><strong>Target Iron Blueprint:</strong> <span style="color:var(--accent-green); font-weight:700;">${optFlexName} | ${optIronWeightName}</span></p>
+        <p><strong>Length & Lie Blueprint:</strong> ${lenAdj} | Lie: ${lieAdj}</p>
+        <p><strong>Grip Blueprint:</strong> <span style="color:var(--accent-blue);">${gripSpec}</span></p>
+      `;
+
+      // --- CURRENT GEAR COMPATIBILITY AUDIT (KEEP VS. REPLACE LOGIC) ---
+      let dHeadVerdict = "KEEP HEAD ✅";
+      let dHeadClass = "badge-keep";
+      let dHeadReason = `Your ${curDriverHead} has high MOI and excellent baseline center-of-gravity dynamics for your swing speed.`;
+
+      if (speed >= 105 && curDriverLoft >= 10.5) {
+        dHeadVerdict = "REPLACE OR DELOFT HEAD 🔄";
+        dHeadClass = "badge-replace";
+        dHeadReason = `Your stated loft (${curDriverLoft}°) is generating excess backspin (>3000 RPM) at ${speed} mph swing speed, robbing you of 12–18 yards of forward rollout. Lower to 9.0° or a lower-spin head.`;
+      } else if (speed < 90 && curDriverLoft <= 9.0) {
+        dHeadVerdict = "INCREASE LOFT OR REPLACE HEAD 🔄";
+        dHeadClass = "badge-replace";
+        dHeadReason = `At ${speed} mph, a ${curDriverLoft}° head cannot generate sufficient aerodynamic apex, causing the ball to fall out of the sky early. A 10.5°–12° head will add carry distance.`;
+      }
+
+      let dShaftVerdict = "KEEP SHAFT ✅";
+      let dShaftClass = "badge-keep";
+      let dShaftReason = `Your shaft weight (${curDriverWeight}g) and flex (${curDriverFlex}) align well with your transition and swing speed.`;
+
+      if (curDriverFlex !== optFlex || Math.abs(curDriverWeight - optDriverWeight) > 10) {
+        dShaftVerdict = "REPLACE SHAFT 🔄";
+        dShaftClass = "badge-replace";
+        dShaftReason = `Your current ${curDriverWeight}g ${curDriverFlex}-Flex shaft is mismatched. You need a ${optDriverWeight}g–${optDriverWeight+5}g ${optFlexName} profile to stabilize face angle and eliminate ${driverMiss}.`;
+      }
+
+      let iHeadVerdict = "KEEP HEADS ✅";
+      let iHeadClass = "badge-keep";
+      let iHeadReason = `Your ${curIronHead} set provides solid sole camber and forgiveness matching your handicap profile (${handicap}).`;
+
+      if (handicap === "High" && (curIronHead.includes("Blade") || curIronHead.includes("MB") || curIronHead.includes("T100") || curIronHead.includes("Blueprint"))) {
+        iHeadVerdict = "REPLACE HEADS 🔄";
+        iHeadClass = "badge-replace";
+        iHeadReason = `Your current tour blade/compact cavity heads are punishing off-center strikes severely. Upgrading to a modern player's distance or cavity back will tighten your dispersion cone by ~40%.`;
+      }
+
+      let iShaftVerdict = "KEEP IRON SHAFTS ✅";
+      let iShaftClass = "badge-keep";
+      let iShaftReason = `Your iron shaft profile matches your tempo and swing delivery.`;
+
+      if (jointPain === "Yes" && !curIronWeight.includes("Graphite")) {
+        iShaftVerdict = "RESHAF TO GRAPHITE 🔄";
+        iShaftClass = "badge-replace";
+        iShaftReason = `Steel shafts transfer peak vibration directly into elbows and wrists. Reshafting to Aerotech SteelFiber or Mitsubishi MMT gives you tour-level stability with 80% vibration reduction.`;
+      } else if (curIronFlex !== optFlex) {
+        iShaftVerdict = "REPLACE IRON SHAFTS 🔄";
+        iShaftClass = "badge-replace";
+        iShaftReason = `Your current ${curIronFlex}-flex shafts lead to timing inconsistencies and ${ironMiss}. Switching to ${optFlexName} will optimize launch window and turf compression.`;
+      }
+
+      document.getElementById('current_gear_audit').innerHTML = `
+        <div class="sub-section">
+          <h4>🏌️ Driver Head Audit</h4>
+          <span class="badge ${dHeadClass}">${dHeadVerdict}</span>
+          <p style="font-size:0.88rem; color:var(--text-main); margin-top:4px;">${dHeadReason}</p>
+        </div>
+        <div class="sub-section" style="margin-top:10px;">
+          <h4>⚡ Driver Shaft Audit</h4>
+          <span class="badge ${dShaftClass}">${dShaftVerdict}</span>
+          <p style="font-size:0.88rem; color:var(--text-main); margin-top:4px;">${dShaftReason}</p>
+        </div>
+        <div class="sub-section" style="margin-top:10px;">
+          <h4>🎯 Iron Heads Audit</h4>
+          <span class="badge ${iHeadClass}">${iHeadVerdict}</span>
+          <p style="font-size:0.88rem; color:var(--text-main); margin-top:4px;">${iHeadReason}</p>
+        </div>
+        <div class="sub-section" style="margin-top:10px;">
+          <h4>🔩 Iron Shafts Audit</h4>
+          <span class="badge ${iShaftClass}">${iShaftVerdict}</span>
+          <p style="font-size:0.88rem; color:var(--text-main); margin-top:4px;">${iShaftReason}</p>
+        </div>
+      `;
+
+      // SWING BREAKDOWN ENGINE
+      let strengths = [];
+      let improvements = [];
+
+      if (speed >= 90) strengths.push("Strong swing speed and carry capacity for driving distance.");
+      if (tempo === "Smooth" || tempo === "Moderate") strengths.push("Controlled transition rhythm that prevents early casting.");
+      if (driverStrike === "Center") strengths.push("Centered driver face impact for efficient smash factor.");
+      if (divot === "Standard") strengths.push("Consistent shallow-to-neutral low point control with irons.");
+      if (strengths.length === 0) strengths.push("Solid athletic foundation ready for equipment optimization.");
+
+      if (driverMiss.includes("Slice")) {
+        improvements.push("<strong>Driver Clubface Delivery:</strong> Open face to path causing weak slices. Pair with a counterbalanced or draw-biased driver head.");
+      } else if (driverMiss.includes("Hook")) {
+        improvements.push("<strong>Driver Path Closure:</strong> Excessive inside attack path creating toe hooks. Firm-tip shaft profile recommended.");
+      }
+
+      if (ironMiss === "Fat") {
+        improvements.push("<strong>Iron Ground Strike:</strong> Weight stalling on trail foot at transition causing fat impact.");
+      } else if (ironMiss === "Thin") {
+        improvements.push("<strong>Iron Compression:</strong> Scooping at impact. Focus on maintaining forward shaft lean through strike.");
+      } else if (ironMiss.includes("PushRight")) {
+        improvements.push("<strong>Iron Lie Angle / Face:</strong> Clubface staying open through turf interaction.");
+      }
+
+      let breakdownHtml = `<h4 style="color:var(--accent-green); margin-bottom:8px;">✅ What You're Doing Well:</h4>`;
+      strengths.forEach(s => breakdownHtml += `<div class="analysis-pill">${s}</div>`);
+      breakdownHtml += `<h4 style="color:var(--accent-gold); margin-top:14px; margin-bottom:8px;">⚠️ Priority Improvement Areas:</h4>`;
+      improvements.forEach(imp => breakdownHtml += `<div class="analysis-pill" style="border-left-color:var(--accent-gold);">${imp}</div>`);
+      document.getElementById('swing_breakdown').innerHTML = breakdownHtml;
+
+      // VIDEO DRILLS
+      const verifiedDrills = {
+        "DannyMaude": {
+          driver: { id: "FvRyRjDRRj4", title: "Danny Maude: The Effortless Way to Hit Driver Straight" },
+          iron: { id: "8oZEN7BqE1Y", title: "Danny Maude: Perfect Iron Strike & Ball-First Compression" }
+        },
+        "PadraigHarrington": {
+          driver: { id: "sKwOf2V3ZPQ", title: "Padraig Harrington: How to Square the Face & Fix Slices" },
+          iron: { id: "KH850ozv31Y", title: "Padraig Harrington: Pure Contact & Divot Mastery" }
+        },
+        "RickShiels": {
+          driver: { id: "lbT1b3AQ0Rk", title: "Rick Shiels: Driver Slice & Path Elimination Drill" },
+          iron: { id: "pW7eM8Y3u9c", title: "Rick Shiels: Hit Pure Iron Shots Every Time" }
+        }
+      };
+
+      const selectedCoachVideos = verifiedDrills[coach] || verifiedDrills["DannyMaude"];
+
+      document.getElementById('driver_video_drill').innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <strong style="color:var(--text-main); font-size:0.9rem;">${selectedCoachVideos.driver.title}</strong>
+        </div>
+        <div class="video-container">
+          <iframe src="https://www.youtube-nocookie.com/embed/${selectedCoachVideos.driver.id}" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
+
+      document.getElementById('iron_video_drill').innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <strong style="color:var(--text-main); font-size:0.9rem;">${selectedCoachVideos.iron.title}</strong>
+        </div>
+        <div class="video-container">
+          <iframe src="https://www.youtube-nocookie.com/embed/${selectedCoachVideos.iron.id}" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
+
+      // DEXTERITY QUERY HELPER
+      const handQuery = dexterity === "LH" ? "LH+Left+Hand+" : "";
+
+      // 3 DRIVER HEADS
+      let dHeads = [
+        { name: `Ping G430 Max (${optLoft}° / 10K)`, note: "Ultra-High MOI & Max Straight Forgiveness", price: "$290 - $380", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Ping+G430+Max+driver" },
+        { name: `TaylorMade Qi10 / Stealth 2 Plus (${optLoft}°)`, note: "Optimized Ball Speed & Adjustable Perimeter Weighting", price: "$270 - $350", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "TaylorMade+Qi10+driver" },
+        { name: `Callaway Paradym Ai Smoke Max (${optLoft}°)`, note: "Ai Smart Face Sweet-Spot Dispersion Control", price: "$310 - $390", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Paradym+Ai+Smoke+driver" }
+      ];
+
+      // 3 DRIVER SHAFTS
+      const dShafts = [
+        { name: `Fujikura Ventus Blue TR ${optDriverWeight}${optFlex} (Velocore)`, note: "Tour-Standard Tip Stability & Tight Dispersion", price: "$140 - $190", link: "https://www.ebay.com/sch/i.html?_nkw=Fujikura+Ventus+Blue+TR+shaft" },
+        { name: `Mitsubishi Tensei 1K Pro White / Blue ${optDriverWeight}${optFlex}`, note: "Ultra-Premium 1K Carbon Fiber Energy Transfer", price: "$125 - $165", link: "https://www.ebay.com/sch/i.html?_nkw=Mitsubishi+Tensei+1K+Pro+shaft" },
+        { name: `UST Mamiya LIN-Q M40X White / Blue ${optDriverWeight}${optFlex}`, note: "High-Value Active Tip Feel & Consistent Launch", price: "$95 - $130", link: "https://www.ebay.com/sch/i.html?_nkw=UST+Mamiya+LIN-Q+shaft" }
+      ];
+
+      // 3 IRON HEADS
+      let iHeads = [];
+      if (handicap === "High") {
+        iHeads = [
+          { name: "Ping G430 / G425 Max Game Improvement", note: "Extreme Perimeter Weighting & High Forgiveness", price: "$480 - $650", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Ping+G430+iron+set" },
+          { name: "Callaway Paradym Ai Smoke / Apex DCB", note: "High Launch Hollow Core with Max Offset", price: "$520 - $690", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Callaway+Ai+Smoke+irons" },
+          { name: "TaylorMade Qi / Stealth Irons", note: "Speed Bridge Cap Back for High Launch & Carry", price: "$450 - $620", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "TaylorMade+Qi+iron+set" }
+        ];
+      } else if (handicap === "Mid") {
+        iHeads = [
+          { name: "TaylorMade P790 (Forged Hollow Distance)", note: "Tour Looks with High Speed SpeedFoam Interior", price: "$520 - $720", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "TaylorMade+P790+iron+set" },
+          { name: "Ping i530 / i525 Player's Distance", note: "Clean Topline with Fast Maraging Steel Face", price: "$540 - $730", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Ping+i530+iron+set" },
+          { name: "Mizuno JPX 923 Forged / Hot Metal Pro", note: "Grain Flow Forged Feel with Game-Improvement Speed", price: "$490 - $680", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Mizuno+JPX+923+Forged+irons" }
+        ];
+      } else {
+        iHeads = [
+          { name: "Ping i230 / Blueprint S (Tour Cavity)", note: "Precision Workability & Activated Elastomer Dampening", price: "$550 - $750", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Ping+i230+iron+set" },
+          { name: "Titleist T150 / T100 (Forged Precision)", note: "Tour-Preferred Compact Shape with Muscle Channel Speed", price: "$590 - $820", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Titleist+T150+iron+set" },
+          { name: "Mizuno Pro 243 / 241 Tour Forged", note: "Pure Chromoly Forged Precision Shaping & Soft Feel", price: "$580 - $790", link: "https://www.ebay.com/sch/i.html?_nkw=" + handQuery + "Mizuno+Pro+243+iron+set" }
+        ];
+      }
+
+      // 3 IRON SHAFTS
+      let iShafts = [];
+      if (jointPain === "Yes" || gender === "Women" || gender === "Senior") {
+        iShafts = [
+          { name: `Aerotech SteelFiber i95 / fc90 (${optFlex})`, note: "High Modulus Graphite with Steel Wire Surface", price: "$210 - $280", link: "https://www.ebay.com/sch/i.html?_nkw=SteelFiber+iron+shafts" },
+          { name: `Mitsubishi MMT 80 / 90 (${optFlex})`, note: "Metal Mesh Tip Technology for Joint Protection", price: "$180 - $240", link: "https://www.ebay.com/sch/i.html?_nkw=Mitsubishi+MMT+iron+shafts" },
+          { name: "UST Mamiya Recoil DART 75 / 90", note: "Dual Action Recoil for Effortless Launch & Pure Feel", price: "$160 - $220", link: "https://www.ebay.com/sch/i.html?_nkw=Recoil+DART+iron+shafts" }
+        ];
+      } else {
+        iShafts = [
+          { name: `Dynamic Gold 105 / Mid 115 (${optFlex}300)`, note: "Low-Mid Launch Steel with Controlled Tour Flight", price: "$150 - $210", link: "https://www.ebay.com/sch/i.html?_nkw=Dynamic+Gold+105+iron+shafts" },
+          { name: `Nippon Modus3 Tour 105 / 120 (${optFlex})`, note: "Smooth Mid-Section Feel with High Apex Holding Power", price: "$160 - $220", link: "https://www.ebay.com/sch/i.html?_nkw=Nippon+Modus+105+shafts" },
+          { name: `KBS $-Taper / Tour 105 (${optFlex})`, note: "Tour Feel with Piercing Mid-Trajectory Dispersion", price: "$150 - $210", link: "https://www.ebay.com/sch/i.html?_nkw=KBS+Tour+105+shafts" }
+        ];
+      }
+
+      function buildCards(items, badgeClass, badgeLabel) {
+        let html = "";
+        items.forEach(item => {
+          html += `
+            <div class="rec-item">
+              <span class="badge ${badgeClass}">${badgeLabel}</span>
+              <div style="font-weight:700; font-size:0.95rem;">${item.name}</div>
+              <div style="font-size:0.85rem; color:var(--accent-blue); margin-top:2px;">${item.note}</div>
+              <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">Est. Pre-Owned: ${item.price}</div>
+              <a href="${item.link}" target="_blank">Search Live eBay Listings ↗</a>
+            </div>
+          `;
+        });
+        return html;
+      }
+
+      document.getElementById('driver_heads_rec').innerHTML = buildCards(dHeads, 'badge-head', 'Driver Head');
+      document.getElementById('driver_shafts_rec').innerHTML = buildCards(dShafts, 'badge-shaft', 'Driver Shaft');
+      document.getElementById('iron_heads_rec').innerHTML = buildCards(iHeads, 'badge-head', 'Iron Head Set');
+      document.getElementById('iron_shafts_rec').innerHTML = buildCards(iShafts, 'badge-shaft', 'Iron Shaft Set');
+
+      renderChart(speed);
+      switchTab(4);
+    }
+
+    function renderChart(speed) {
+      const ctx = document.getElementById('flightChart').getContext('2d');
+      if (flightChart) flightChart.destroy();
+
+      const carry = Math.round(speed * 2.3);
+      const points = [];
+      for (let x = 0; x <= carry; x += 15) {
+        const h = 32 * Math.sin((Math.PI * x) / carry);
+        points.push({ x: x, y: Math.max(0, h) });
+      }
+
+      flightChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Optimized Driver Trajectory (Yards / Apex)',
+            data: points,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Distance (Yards)', color: '#94a3b8' }, grid: { color: '#334155' } },
+            y: { title: { display: true, text: 'Height (Yards)', color: '#94a3b8' }, grid: { color: '#334155' }, min: 0, max: 45 }
+          },
+          plugins: { legend: { labels: { color: '#fff' } } }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
