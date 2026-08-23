@@ -39,7 +39,7 @@
     .rec-item { background: #0f172a; border-radius: 8px; padding: 14px; margin-bottom: 12px; border-left: 4px solid var(--accent-blue); }
     .rec-item a { color: var(--accent-green); font-size: 0.85rem; text-decoration: none; display: inline-block; margin-top: 6px; }
     .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-top: 10px; }
-    .video-container iframe { position: absolute; top:0; left: 0; width: 100%; height: 100%; }
+    .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .highlight-box { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 0.9rem; }
   </style>
 </head>
@@ -159,7 +159,7 @@
       </div>
     </div>
 
-    <!-- TAB 5 (DIAGNOSTIC REPORT) -->
+    <!-- TAB 5 -->
     <div class="tab-content" id="tab-4">
       <div class="card">
         <h3>Fitting Engine Results</h3>
@@ -200,14 +200,12 @@
       const miss = document.getElementById('miss_pattern').value;
       const launch = document.getElementById('launch_height').value;
 
-      // Shaft Flex & Weight Math
       let flex = "Regular (R)";
       let weight = "55g - 60g";
       if (speed < 85) { flex = "Senior / Lite (A)"; weight = "45g - 50g"; }
       else if (speed > 105) { flex = "Extra Stiff (X)"; weight = "65g - 75g"; }
       else if (speed >= 95) { flex = "Stiff (S)"; weight = "60g - 65g"; }
 
-      // Length Math
       let lenAdj = "Standard (45.5\")";
       if (wtf < 34) lenAdj = "-0.50\" Under Standard";
       if (wtf > 36) lenAdj = "+0.50\" Over Standard";
@@ -223,7 +221,6 @@
         Keeping your current head and swapping only the shaft for ~$110–$140 delivers <strong>~92% of the total performance gain</strong> of a $600 brand-new club.
       `;
 
-      // Top 5 Marketplace Recommendations
       const recs = [
         { name: "Fujikura Ventus TR Blue 6" + flex[0], type: "Shaft Only", price: "$140 - $185", link: "https://www.ebay.com/sch/i.html?_nkw=Fujikura+Ventus+Blue+shaft" },
         { name: "Mitsubishi Tensei 1K Pro White 60", type: "Shaft Only", price: "$120 - $160", link: "https://www.ebay.com/sch/i.html?_nkw=Tensei+1K+Pro+shaft" },
@@ -245,7 +242,6 @@
       });
       document.getElementById('rec_list').innerHTML = recHtml;
 
-      // Video Drill Embed
       let drillId = "bagOs4vuLuo";
       if (miss === "Slice") drillId = "lbT1b3AQ0Rk";
       document.getElementById('video_drill').innerHTML = `
@@ -255,7 +251,6 @@
         </div>
       `;
 
-      // Render Trajectory
       renderChart(speed);
       switchTab(4);
     }
